@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C2HDL // Compilador</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!--Controles de estado-->
+  <input type="radio" name="isa" id="isa-riscv" checked>
+  <input type="radio" name="isa" id="isa-mips">
+  <input type="radio" name="isa" id="isa-arm">
+  <input type="checkbox" id="run">
+
+  <!-- ===== Matrix CSS ===== -->
+  <div class="rain" aria-hidden="true">
+    <span style="--x:2%;--d:11s;--s:-3s">01001101 01000001 01010100 01010010 01001001 01011000 10110010 01100110 00110101 11010010</span>
+    <span style="--x:6%;--d:15s;--s:-9s">1011 0010 1110 0001 0101 1100 0011 1010 0110 1001 1101 0100 0010 1111 1000</span>
+    <span style="--x:10%;--d:9s;--s:-1s">0x00500293 0x00300313 0x006283B3 0x00038513 0xE3A04005 0x20080005 0x01095020</span>
+    <span style="--x:14%;--d:13s;--s:-6s">00100000000010000000000000000101 11100011101000000100000000000101</span>
+    <span style="--x:18%;--d:17s;--s:-12s">1001 1101 0001 1110 0010 0111 1010 0101 1011 0000 1100 0110 1000 0011 1111</span>
+    <span style="--x:22%;--d:10s;--s:-4s">0100 1000 0100 1001 0100 0100 0100 1100 0011 0010 0100 0001 0101 0011 0110</span>
+    <span style="--x:26%;--d:14s;--s:-8s">add sub lw sw beq jal mov ldr str addi andi ori xor sll srl slt bne j</span>
+    <span style="--x:30%;--d:12s;--s:-2s">1100 0100 1010 0011 0111 1001 0001 1110 0101 1000 0010 1101 1011 0110 0000</span>
+    <span style="--x:34%;--d:16s;--s:-10s">entity inst_mem is port addr inst std_logic_vector 31 downto 0 end rtl</span>
+    <span style="--x:38%;--d:9.5s;--s:-5s">0110 1011 0001 1100 1001 0111 0010 1000 1110 0101 0011 1010 1101 0000 1111</span>
+    <span style="--x:42%;--d:13.5s;--s:-7s">10110010011001100011010111010010 00000000010100000000001010010011</span>
+    <span style="--x:46%;--d:11.5s;--s:-11s">0001 1111 0100 1010 1101 0010 0111 0001 1000 0110 1011 0101 1100 0011 1001</span>
+    <span style="--x:50%;--d:15.5s;--s:-1s">PC IF ID EX MEM WB ALU REG CLK RST PC IF ID EX MEM WB ALU REG CLK RST</span>
+    <span style="--x:54%;--d:10.5s;--s:-6s">1010 0101 0011 1100 0110 1001 1110 0010 0001 1011 0100 1000 0111 1101 0000</span>
+    <span style="--x:58%;--d:14.5s;--s:-9s">0x20090003 0x01095020 0x01401020 0xE3A05003 0xE0846005 0xE1A00006</span>
+    <span style="--x:62%;--d:12.5s;--s:-3s">0011 1001 1100 0001 0110 1010 1111 0100 0101 1000 0010 1101 1011 0111 1110</span>
+    <span style="--x:66%;--d:17.5s;--s:-13s">int main return a b c while for if else void char float long short</span>
+    <span style="--x:70%;--d:9s;--s:-2s">1110 0011 1010 0000 0100 0000 0000 0101 1110 0000 1000 0100 0110 0000</span>
+    <span style="--x:74%;--d:13s;--s:-8s">0100 1101 0100 0001 0101 0100 0101 0010 0100 1001 0101 1000 0010 0000</span>
+    <span style="--x:78%;--d:11s;--s:-4s">1001 0110 0011 1101 0000 1110 0101 1011 1100 0010 0111 1000 0001 1010</span>
+    <span style="--x:82%;--d:16s;--s:-10s">RISC-V MIPS ARM RISC-V MIPS ARM RISC-V MIPS ARM RISC-V MIPS ARM RISC-V</span>
+    <span style="--x:86%;--d:10s;--s:-5s">1111 0000 1010 0101 1100 0011 0110 1001 0001 1110 0111 1000 0010 1101</span>
+    <span style="--x:90%;--d:14s;--s:-7s">0010 1110 0111 0001 1000 0101 1101 0010 1011 0100 0011 1100 0110 1001</span>
+    <span style="--x:94%;--d:12s;--s:-11s">0101 0010 1001 1110 0100 1011 0001 0111 1010 0011 1100 1000 0110 1101</span>
+    <span style="--x:98%;--d:15s;--s:-2s">00 11 01 10 00 11 01 10 00 11 01 10 00 11 01 10 00 11 01 10 00 11 01 10</span>
+  </div>
+
+  <main class="shell">
+
+    <!--Cabecera-->
+    <header class="hero">
+      <p class="eyebrow">&gt; arquitectura y organizacion de computadoras</p>
+      <h1 class="glitch" data-text="C2HDL">C2HDL</h1>
+      <p class="tagline">Compilador <b>C → ASM → binario → VHDL</b> para nuestro procesador<span class="cursor"></span></p>
+      <ul class="status-bar">
+        <li><i class="dot"></i> sistema en línea</li>
+        <li>build <b>v0.1-maqueta</b></li>
+        <li>ISA activa: <b>
+          <span data-isa="riscv">RISC-V RV32I</span>
+          <span data-isa="mips">MIPS32</span>
+          <span data-isa="arm">ARMv7 (A32)</span>
+        </b></li>
+      </ul>
+    </header>
+
+    <!--Selector de ISA -->
+    <section class="panel">
+      <h2 class="panel-title"><span class="idx">00</span> Selecciona la arquitectura (ISA)</h2>
+      <div class="isa-grid">
+        <label for="isa-riscv" class="isa-card" data-card="riscv">
+          <span class="isa-name">RISC-V</span>
+          <span class="isa-desc">RV32I · instrucciones de 32 bits · 32 registros (x0–x31)</span>
+          <span class="isa-tag">open source</span>
+        </label>
+        <label for="isa-mips" class="isa-card" data-card="mips">
+          <span class="isa-name">MIPS</span>
+          <span class="isa-desc">MIPS32 · formatos R / I / J · 32 registros ($zero–$ra)</span>
+          <span class="isa-tag">clásica</span>
+        </label>
+        <label for="isa-arm" class="isa-card" data-card="arm">
+          <span class="isa-name">ARM</span>
+          <span class="isa-desc">ARMv7 A32 · ejecución condicional · 16 registros (r0–r15)</span>
+          <span class="isa-tag">comercial</span>
+        </label>
+      </div>
+    </section>
+
+    <!--BTN compilar-->
+    <div class="run-zone">
+      <label for="run" class="run-btn">
+        <span class="when-off"> COMPILAR</span>
+        <span class="when-on"> REINICIAR</span>
+      </label>
+      <p class="run-hint">Por ahora el boton solo muestra el flujo con un ejemplo</p>
+    </div>
+
+    <!--Pipeline-->
+    <ol class="pipeline">
+
+      <!-- 01 · C -->
+      <li class="stage" style="--n:0">
+        <div class="stage-head">
+          <span class="idx">01</span>
+          <h3>Código fuente en C</h3>
+          <span class="badge always">ENTRADA</span>
+        </div>
+        <div class="stage-body">
+          <div class="term">
+            <div class="term-bar"><i></i><i></i><i></i><span>main.c</span></div>
+            <textarea class="editor" spellcheck="false" rows="9" aria-label="Código en C">int main() {
+    int a = 5;
+    int b = 3;
+    int c = a + b;
+    return c;
+}</textarea>
+          </div>
+          <p class="note">// aquí se podra pegar cualquier programa en C</p>
+        </div>
+      </li>
+
+      <!-- 02 · ASM -->
+      <li class="stage" style="--n:1">
+        <div class="stage-head">
+          <span class="idx">02</span>
+          <h3>Ensamblador <small>(<span data-isa="riscv">RISC-V</span><span data-isa="mips">MIPS</span><span data-isa="arm">ARM</span>)</small></h3>
+          <span class="badge"></span>
+        </div>
+        <div class="stage-body">
+          <p class="wait">&gt; esperando compilación<span class="cursor"></span></p>
+          <div class="out">
+            <div class="term"><div class="term-bar"><i></i><i></i><i></i><span>main.s</span></div>
+<pre data-isa="riscv"><span class="c"># RISC-V RV32I</span>
+<span class="d">.text</span>
+<span class="d">.globl</span> main
+<span class="l">main:</span>
+    <span class="k">addi</span> <span class="r">x5</span>, <span class="r">x0</span>, <span class="n">5</span>      <span class="c"># a = 5</span>
+    <span class="k">addi</span> <span class="r">x6</span>, <span class="r">x0</span>, <span class="n">3</span>      <span class="c"># b = 3</span>
+    <span class="k">add</span>  <span class="r">x7</span>, <span class="r">x5</span>, <span class="r">x6</span>     <span class="c"># c = a + b</span>
+    <span class="k">addi</span> <span class="r">a0</span>, <span class="r">x7</span>, <span class="n">0</span>      <span class="c"># return c</span></pre>
+<pre data-isa="mips"><span class="c"># MIPS32</span>
+<span class="d">.text</span>
+<span class="d">.globl</span> main
+<span class="l">main:</span>
+    <span class="k">addi</span> <span class="r">$t0</span>, <span class="r">$zero</span>, <span class="n">5</span>   <span class="c"># a = 5</span>
+    <span class="k">addi</span> <span class="r">$t1</span>, <span class="r">$zero</span>, <span class="n">3</span>   <span class="c"># b = 3</span>
+    <span class="k">add</span>  <span class="r">$t2</span>, <span class="r">$t0</span>, <span class="r">$t1</span>    <span class="c"># c = a + b</span>
+    <span class="k">add</span>  <span class="r">$v0</span>, <span class="r">$t2</span>, <span class="r">$zero</span>  <span class="c"># return c</span></pre>
+<pre data-isa="arm"><span class="c">@ ARMv7 A32</span>
+<span class="d">.text</span>
+<span class="d">.global</span> main
+<span class="l">main:</span>
+    <span class="k">mov</span> <span class="r">r4</span>, <span class="n">#5</span>          <span class="c">@ a = 5</span>
+    <span class="k">mov</span> <span class="r">r5</span>, <span class="n">#3</span>          <span class="c">@ b = 3</span>
+    <span class="k">add</span> <span class="r">r6</span>, <span class="r">r4</span>, <span class="r">r5</span>      <span class="c">@ c = a + b</span>
+    <span class="k">mov</span> <span class="r">r0</span>, <span class="r">r6</span>          <span class="c">@ return c</span></pre>
+            </div>
+          </div>
+        </div>
+      </li>
+
+      <!-- 03 · Binario -->
+      <li class="stage" style="--n:2">
+        <div class="stage-head">
+          <span class="idx">03</span>
+          <h3>Código máquina <small>(binario)</small></h3>
+          <span class="badge"></span>
+        </div>
+        <div class="stage-body">
+          <p class="wait">&gt; esperando ensamblador<span class="cursor"></span></p>
+          <div class="out">
+            <div class="table-wrap" data-isa="riscv">
+              <table class="bin">
+                <thead><tr><th>Dir</th><th>Binario (32 bits)</th><th>Hex</th><th>Instrucción</th></tr></thead>
+                <tbody>
+                  <tr><td>0x00</td><td>00000000010100000000001010010011</td><td>00500293</td><td>addi x5, x0, 5</td></tr>
+                  <tr><td>0x04</td><td>00000000001100000000001100010011</td><td>00300313</td><td>addi x6, x0, 3</td></tr>
+                  <tr><td>0x08</td><td>00000000011000101000001110110011</td><td>006283B3</td><td>add x7, x5, x6</td></tr>
+                  <tr><td>0x0C</td><td>00000000000000111000010100010011</td><td>00038513</td><td>addi a0, x7, 0</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-wrap" data-isa="mips">
+              <table class="bin">
+                <thead><tr><th>Dir</th><th>Binario (32 bits)</th><th>Hex</th><th>Instrucción</th></tr></thead>
+                <tbody>
+                  <tr><td>0x00</td><td>00100000000010000000000000000101</td><td>20080005</td><td>addi $t0, $zero, 5</td></tr>
+                  <tr><td>0x04</td><td>00100000000010010000000000000011</td><td>20090003</td><td>addi $t1, $zero, 3</td></tr>
+                  <tr><td>0x08</td><td>00000001000010010101000000100000</td><td>01095020</td><td>add $t2, $t0, $t1</td></tr>
+                  <tr><td>0x0C</td><td>00000001010000000001000000100000</td><td>01401020</td><td>add $v0, $t2, $zero</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="table-wrap" data-isa="arm">
+              <table class="bin">
+                <thead><tr><th>Dir</th><th>Binario (32 bits)</th><th>Hex</th><th>Instrucción</th></tr></thead>
+                <tbody>
+                  <tr><td>0x00</td><td>11100011101000000100000000000101</td><td>E3A04005</td><td>mov r4, #5</td></tr>
+                  <tr><td>0x04</td><td>11100011101000000101000000000011</td><td>E3A05003</td><td>mov r5, #3</td></tr>
+                  <tr><td>0x08</td><td>11100000100001000110000000000101</td><td>E0846005</td><td>add r6, r4, r5</td></tr>
+                  <tr><td>0x0C</td><td>11100001101000000000000000000110</td><td>E1A00006</td><td>mov r0, r6</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </li>
+
+      <!-- 04 · VHDL -->
+      <li class="stage" style="--n:3">
+        <div class="stage-head">
+          <span class="idx">04</span>
+          <h3>Memoria de instrucciones <small>(.vhdl)</small></h3>
+          <span class="badge"></span>
+        </div>
+        <div class="stage-body">
+          <p class="wait">&gt; esperando código máquina<span class="cursor"></span></p>
+          <div class="out">
+            <div class="term"><div class="term-bar"><i></i><i></i><i></i><span>inst_mem.vhd</span></div>
+<pre data-isa="riscv"><span class="k">library</span> IEEE;
+<span class="k">use</span> IEEE.STD_LOGIC_1164.<span class="k">ALL</span>;
+<span class="k">use</span> IEEE.NUMERIC_STD.<span class="k">ALL</span>;
+
+<span class="k">entity</span> inst_mem <span class="k">is</span>
+  <span class="k">port</span> ( addr : <span class="k">in</span>  std_logic_vector(7 <span class="k">downto</span> 0);   <span class="c">-- PC(9 downto 2)</span>
+         inst : <span class="k">out</span> std_logic_vector(31 <span class="k">downto</span> 0) );
+<span class="k">end</span> inst_mem;
+
+<span class="k">architecture</span> rtl <span class="k">of</span> inst_mem <span class="k">is</span>
+  <span class="k">type</span> rom_t <span class="k">is array</span> (0 <span class="k">to</span> 255) <span class="k">of</span> std_logic_vector(31 <span class="k">downto</span> 0);
+  <span class="k">constant</span> ROM : rom_t := (
+    0 =&gt; <span class="n">x"00500293"</span>,  <span class="c">-- addi x5, x0, 5</span>
+    1 =&gt; <span class="n">x"00300313"</span>,  <span class="c">-- addi x6, x0, 3</span>
+    2 =&gt; <span class="n">x"006283B3"</span>,  <span class="c">-- add  x7, x5, x6</span>
+    3 =&gt; <span class="n">x"00038513"</span>,  <span class="c">-- addi a0, x7, 0</span>
+    <span class="k">others</span> =&gt; (<span class="k">others</span> =&gt; '0') );
+<span class="k">begin</span>
+  inst &lt;= ROM(to_integer(unsigned(addr)));
+<span class="k">end</span> rtl;</pre>
+<pre data-isa="mips"><span class="k">library</span> IEEE;
+<span class="k">use</span> IEEE.STD_LOGIC_1164.<span class="k">ALL</span>;
+<span class="k">use</span> IEEE.NUMERIC_STD.<span class="k">ALL</span>;
+
+<span class="k">entity</span> inst_mem <span class="k">is</span>
+  <span class="k">port</span> ( addr : <span class="k">in</span>  std_logic_vector(7 <span class="k">downto</span> 0);   <span class="c">-- PC(9 downto 2)</span>
+         inst : <span class="k">out</span> std_logic_vector(31 <span class="k">downto</span> 0) );
+<span class="k">end</span> inst_mem;
+
+<span class="k">architecture</span> rtl <span class="k">of</span> inst_mem <span class="k">is</span>
+  <span class="k">type</span> rom_t <span class="k">is array</span> (0 <span class="k">to</span> 255) <span class="k">of</span> std_logic_vector(31 <span class="k">downto</span> 0);
+  <span class="k">constant</span> ROM : rom_t := (
+    0 =&gt; <span class="n">x"20080005"</span>,  <span class="c">-- addi $t0, $zero, 5</span>
+    1 =&gt; <span class="n">x"20090003"</span>,  <span class="c">-- addi $t1, $zero, 3</span>
+    2 =&gt; <span class="n">x"01095020"</span>,  <span class="c">-- add  $t2, $t0, $t1</span>
+    3 =&gt; <span class="n">x"01401020"</span>,  <span class="c">-- add  $v0, $t2, $zero</span>
+    <span class="k">others</span> =&gt; (<span class="k">others</span> =&gt; '0') );
+<span class="k">begin</span>
+  inst &lt;= ROM(to_integer(unsigned(addr)));
+<span class="k">end</span> rtl;</pre>
+<pre data-isa="arm"><span class="k">library</span> IEEE;
+<span class="k">use</span> IEEE.STD_LOGIC_1164.<span class="k">ALL</span>;
+<span class="k">use</span> IEEE.NUMERIC_STD.<span class="k">ALL</span>;
+
+<span class="k">entity</span> inst_mem <span class="k">is</span>
+  <span class="k">port</span> ( addr : <span class="k">in</span>  std_logic_vector(7 <span class="k">downto</span> 0);   <span class="c">-- PC(9 downto 2)</span>
+         inst : <span class="k">out</span> std_logic_vector(31 <span class="k">downto</span> 0) );
+<span class="k">end</span> inst_mem;
+
+<span class="k">architecture</span> rtl <span class="k">of</span> inst_mem <span class="k">is</span>
+  <span class="k">type</span> rom_t <span class="k">is array</span> (0 <span class="k">to</span> 255) <span class="k">of</span> std_logic_vector(31 <span class="k">downto</span> 0);
+  <span class="k">constant</span> ROM : rom_t := (
+    0 =&gt; <span class="n">x"E3A04005"</span>,  <span class="c">-- mov r4, #5</span>
+    1 =&gt; <span class="n">x"E3A05003"</span>,  <span class="c">-- mov r5, #3</span>
+    2 =&gt; <span class="n">x"E0846005"</span>,  <span class="c">-- add r6, r4, r5</span>
+    3 =&gt; <span class="n">x"E1A00006"</span>,  <span class="c">-- mov r0, r6</span>
+    <span class="k">others</span> =&gt; (<span class="k">others</span> =&gt; '0') );
+<span class="k">begin</span>
+  inst &lt;= ROM(to_integer(unsigned(addr)));
+<span class="k">end</span> rtl;</pre>
+            </div>
+            <div class="actions">
+              <span class="btn-ghost">⬇ Descargar .vhdl <em>(próximamente)</em></span>
+              <span class="btn-ghost">⧉ Copiar <em>(próximamente)</em></span>
+            </div>
+          </div>
+        </div>
+      </li>
+
+      <!-- 05 · Simulación -->
+      <li class="stage" style="--n:4">
+        <div class="stage-head">
+          <span class="idx">05</span>
+          <h3>Prueba en el procesador <small>(simulación)</small></h3>
+          <span class="badge"></span>
+        </div>
+        <div class="stage-body">
+          <p class="wait">&gt; esperando memoria de instrucciones<span class="cursor"></span></p>
+          <div class="out">
+            <div class="wave">
+              <div class="wave-row"><span class="sig">CLK</span><div class="clk"></div></div>
+              <div class="wave-row"><span class="sig">PC</span>
+                <div class="chips"><b>0x00</b><b>0x04</b><b>0x08</b><b>0x0C</b></div></div>
+              <div class="wave-row" data-isa="riscv"><span class="sig">INST</span>
+                <div class="chips"><b>00500293</b><b>00300313</b><b>006283B3</b><b>00038513</b></div></div>
+              <div class="wave-row" data-isa="mips"><span class="sig">INST</span>
+                <div class="chips"><b>20080005</b><b>20090003</b><b>01095020</b><b>01401020</b></div></div>
+              <div class="wave-row" data-isa="arm"><span class="sig">INST</span>
+                <div class="chips"><b>E3A04005</b><b>E3A05003</b><b>E0846005</b><b>E1A00006</b></div></div>
+            </div>
+            <div class="regs">
+              <div data-isa="riscv" class="regs-grid">
+                <div><span>x5</span><b>5</b></div><div><span>x6</span><b>3</b></div>
+                <div><span>x7</span><b>8</b></div><div class="hl"><span>a0</span><b>8</b></div>
+              </div>
+              <div data-isa="mips" class="regs-grid">
+                <div><span>$t0</span><b>5</b></div><div><span>$t1</span><b>3</b></div>
+                <div><span>$t2</span><b>8</b></div><div class="hl"><span>$v0</span><b>8</b></div>
+              </div>
+              <div data-isa="arm" class="regs-grid">
+                <div><span>r4</span><b>5</b></div><div><span>r5</span><b>3</b></div>
+                <div><span>r6</span><b>8</b></div><div class="hl"><span>r0</span><b>8</b></div>
+              </div>
+            </div>
+            <p class="verdict">✔ resultado esperado: <b>return 8</b> &nbsp;//&nbsp; datos de ejemplo, aún no es una simulación real</p>
+          </div>
+        </div>
+      </li>
+
+    </ol>
+
+    <!--Roadmap-->
+    <section class="panel roadmap">
+      <h2 class="panel-title"><span class="idx">//</span> Roadmap del proyecto</h2>
+      <ul class="road">
+        <li class="done">Maqueta HTML + CSS (esta versión)</li>
+        <li>Analizador léxico y sintáctico de C (JavaScript)</li>
+        <li>Generador de ensamblador por ISA</li>
+        <li>Ensamblador → código máquina binario</li>
+        <li>Exportar archivo .vhdl para la memoria de instrucciones</li>
+        <li>Simulador del procesador en el navegador</li>
+      </ul>
+    </section>
+
+    <footer class="foot">
+      <span>C2HDL · proyecto de Arquitectura y Organización de Computadoras</span>
+      <span>wake up, compiler…</span>
+    </footer>
+  </main>
+
+</body>
+</html>
